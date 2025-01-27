@@ -20,18 +20,13 @@ logged_in=$?
 # If not logged in, attempt login
 if [ $logged_in -ne 0 ]; then
     while true; do
-        echo "Please enter your BITS WiFi credentials."
-
-        # Username and Password Prompt
-        read "username?Enter your BITS Username: "
-        read -s "password?Enter your BITS Password: "
-        echo ""
+        
 
         # Step 1: Trigger the captive portal redirect
         initial_response=$(curl -s -L "http://edge-http.microsoft.com/captiveportal/generate_204")
         
         # Step 2: Extract the redirected login page URL
-        login_url=$(echo "$initial_response" | grep -oP 'action="\K[^"]+')
+        login_url=$(echo "$initial_response" | grep -oP 'location="\K[^"]+')
 
         if [ -z "$login_url" ]; then
             echo "Failed to fetch the login page. Exiting."
@@ -53,10 +48,15 @@ if [ $logged_in -ne 0 ]; then
             echo "Token extraction failed. Exiting."
             exit 1
         fi
+        echo "Please enter your BITS WiFi credentials."
+
+        # Username and Password Prompt
+        read -p "Username: " username
+        read -sp "Password: " password
+        
 
         # Step 5: Send credentials via POST request
-        response=$(curl -s -d "username=$username&password=$password&magic=$token&4Tredir=$redirect_url" \
-                  -H "Referer: $login_url" \
+        response=$(curl -s -d "username=$username&password=$password&magic=$token" \
                   -X POST "$login_url")
 
         # Step 6: Check if login was successful
